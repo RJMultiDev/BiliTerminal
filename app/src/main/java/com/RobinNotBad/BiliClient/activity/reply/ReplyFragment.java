@@ -245,6 +245,8 @@ public class ReplyFragment extends RefreshListFragment {
                         Log.e("debug", "到底了");
                         bottom = true;
                     } else bottom = false;
+                } else if (result == -1 && isAdded()) {
+                    loadFail();
                 }
             } catch (Exception e) {
                 loadFail(e);

@@ -1,98 +1,83 @@
 package com.RobinNotBad.BiliClient.api;
 
-//关注api
-//2023-08-27
-
+import com.RobinNotBad.BiliClient.model.ApiResponse;
 import com.RobinNotBad.BiliClient.model.FollowTag;
 import com.RobinNotBad.BiliClient.model.UserInfo;
+import com.RobinNotBad.BiliClient.util.GsonUtil;
 import com.RobinNotBad.BiliClient.util.NetWorkUtil;
+import com.google.gson.annotations.SerializedName;
 
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class FollowApi {
+
+    public static class FollowListData {
+        @SerializedName("list")
+        public List<FollowItem> list;
+    }
+
+    public static class FollowItem {
+        @SerializedName("mid") public long mid;
+        @SerializedName("uname") public String uname;
+        @SerializedName("face") public String face;
+        @SerializedName("sign") public String sign;
+        @SerializedName("mtime") public long mtime;
+    }
+
+    public static class TagItem {
+        @SerializedName("tagid") public int tagid;
+        @SerializedName("name") public String name;
+        @SerializedName("count") public int count;
+    }
+
     public static int getFollowingList(long mid, int page, List<UserInfo> userList) throws IOException, JSONException {
-        String url = "https://api.bilibili.com/x/relation/followings?vmid=" + mid + "&pn=" + page + "&ps=20&order=desc&order_type=attention";
-        JSONObject callback = NetWorkUtil.getJson(url);
-        if (callback.optInt("code", -1) != 0)
-            throw new JSONException(callback.optInt("code", -1) + "：" + callback.optString("message", "未知API错误"));
-        JSONObject data = callback.getJSONObject("data");
-        JSONArray list = data.getJSONArray("list");
-        if (list.length() == 0) return 1;
-        else {
-            for (int i = 0; i < list.length(); i++) {
-                JSONObject userInfo = list.getJSONObject(i);
-                String name = userInfo.getString("uname");
-                long uid = userInfo.getLong("mid");
-                String avatar = userInfo.getString("face");
-                String sign = userInfo.getString("sign");
-                userList.add(new UserInfo(uid, name, avatar, sign, 0, 0, 0, true, "", 0, "", userInfo.optLong("mtime", 0), 0));
-            }
-            return 0;
+        String json = NetWorkUtil.getJson("https://api.bilibili.com/x/relation/followings?vmid=" + mid + "&pn=" + page + "&ps=20&order=desc&order_type=attention").toString();
+        ApiResponse<FollowListData> resp = GsonUtil.fromJson(json, new com.google.gson.reflect.TypeToken<ApiResponse<FollowListData>>(){}.getType());
+        if (resp == null || !resp.isSuccess()) throw new JSONException("获取关注列表失败");
+        if (resp.data == null || resp.data.list == null || resp.data.list.isEmpty()) return 1;
+        for (FollowItem item : resp.data.list) {
+            if (item == null) continue;
+            userList.add(new UserInfo(item.mid, item.uname, item.face, item.sign, 0, 0, 0, true, "", 0, "", item.mtime, 0));
         }
+        return 0;
     }
 
     public static int getFollowerList(long mid, int page, List<UserInfo> userList) throws IOException, JSONException {
-        String url = "https://api.bilibili.com/x/relation/followers?vmid=" + mid + "&pn=" + page + "&ps=20&order=desc&order_type=attention";
-        JSONObject callback = NetWorkUtil.getJson(url);
-        if (callback.optInt("code", -1) != 0)
-            throw new JSONException(callback.optInt("code", -1) + "：" + callback.optString("message", "未知API错误"));
-        JSONObject data = callback.getJSONObject("data");
-        JSONArray list = data.getJSONArray("list");
-        if (list.length() == 0) return 1;
-        else {
-            for (int i = 0; i < list.length(); i++) {
-                JSONObject userInfo = list.getJSONObject(i);
-                String name = userInfo.getString("uname");
-                long uid = userInfo.getLong("mid");
-                String avatar = userInfo.getString("face");
-                String sign = userInfo.getString("sign");
-                userList.add(new UserInfo(uid, name, avatar, sign, 0, 0, 0, true, "", 0, "", userInfo.optLong("mtime", 0), 0));
-            }
-            return 0;
+        String json = NetWorkUtil.getJson("https://api.bilibili.com/x/relation/followers?vmid=" + mid + "&pn=" + page + "&ps=20&order=desc&order_type=attention").toString();
+        ApiResponse<FollowListData> resp = GsonUtil.fromJson(json, new com.google.gson.reflect.TypeToken<ApiResponse<FollowListData>>(){}.getType());
+        if (resp == null || !resp.isSuccess()) throw new JSONException("获取粉丝列表失败");
+        if (resp.data == null || resp.data.list == null || resp.data.list.isEmpty()) return 1;
+        for (FollowItem item : resp.data.list) {
+            if (item == null) continue;
+            userList.add(new UserInfo(item.mid, item.uname, item.face, item.sign, 0, 0, 0, true, "", 0, "", item.mtime, 0));
         }
+        return 0;
     }
 
     public static List<FollowTag> getFollowTags() throws IOException, JSONException {
-        String url = "https://api.bilibili.com/x/relation/tags";
-        JSONObject callback = NetWorkUtil.getJson(url);
-        if (callback.optInt("code", -1) != 0)
-            throw new JSONException(callback.optInt("code", -1) + "：" + callback.optString("message", "未知API错误"));
-        JSONArray data = callback.getJSONArray("data");
+        String json = NetWorkUtil.getJson("https://api.bilibili.com/x/relation/tags").toString();
+        ApiResponse<List<TagItem>> resp = GsonUtil.fromJson(json, new com.google.gson.reflect.TypeToken<ApiResponse<List<TagItem>>>(){}.getType());
         List<FollowTag> tagList = new ArrayList<>();
-        for (int i = 0; i < data.length(); i++) {
-            JSONObject tag = data.getJSONObject(i);
-            int tagid = tag.getInt("tagid");
-            String name = tag.getString("name");
-            int count = tag.getInt("count");
-            tagList.add(new FollowTag(tagid, name, count));
+        if (resp == null || !resp.isSuccess() || resp.data == null) return tagList;
+        for (TagItem item : resp.data) {
+            if (item != null) tagList.add(new FollowTag(item.tagid, item.name, item.count));
         }
         return tagList;
     }
 
     public static int getFollowTagUsers(int tagid, int page, List<UserInfo> userList) throws IOException, JSONException {
-        String url = "https://api.bilibili.com/x/relation/tag?tagid=" + tagid + "&pn=" + page + "&ps=20";
-        JSONObject callback = NetWorkUtil.getJson(url);
-        if (callback.optInt("code", -1) != 0)
-            throw new JSONException(callback.optInt("code", -1) + "：" + callback.optString("message", "未知API错误"));
-        JSONArray data = callback.getJSONArray("data");
-        if (data.length() == 0) return 1;
-        else {
-            for (int i = 0; i < data.length(); i++) {
-                JSONObject userInfo = data.getJSONObject(i);
-                String name = userInfo.getString("uname");
-                long uid = userInfo.getLong("mid");
-                String avatar = userInfo.getString("face");
-                String sign = userInfo.getString("sign");
-                userList.add(new UserInfo(uid, name, avatar, sign, 0, 0, 0, true, "", 0, "", 0));
-            }
-            return 0;
+        String json = NetWorkUtil.getJson("https://api.bilibili.com/x/relation/tag?tagid=" + tagid + "&pn=" + page + "&ps=20").toString();
+        ApiResponse<List<FollowItem>> resp = GsonUtil.fromJson(json, new com.google.gson.reflect.TypeToken<ApiResponse<List<FollowItem>>>(){}.getType());
+        if (resp == null || !resp.isSuccess()) throw new JSONException("获取分组用户失败");
+        if (resp.data == null || resp.data.isEmpty()) return 1;
+        for (FollowItem item : resp.data) {
+            if (item == null) continue;
+            userList.add(new UserInfo(item.mid, item.uname, item.face, item.sign, 0, 0, 0, true, "", 0, "", 0));
         }
+        return 0;
     }
 }

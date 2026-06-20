@@ -28,25 +28,27 @@
 >
 >#### 本项目可能包含：
 >
-> 大哥上楼梯：
+> ~~大哥上楼梯：~~
+> ```java
+> // if (all.has("xxx")) {
+> //     JSONObject data = all.getJSONObject("xxx");
+> //     if (data.has("xxx")){
+> //         JSONObject data2 = data.getJSONObject("xxx");
+> //         if (data2.has("xxx")){
+> //             JSONObject data3 = data2.getJSONObject("xxx");
+> //             if (data3.has("items_lists")){
 > ```
-> if (all.has("xxx")) {
->     JSONObject data = all.getJSONObject("xxx");
->     if (data.has("xxx")){
->         JSONObject data2 = data.getJSONObject("xxx");
->         if (data2.has("xxx")){
->             JSONObject data3 = data2.getJSONObject("xxx");
->             if (data3.has("items_lists")){
->```
 >
-> 神秘逻辑：
+> ~~神秘逻辑：~~
+> ```java
+> // if (data.getInt("aaa") == 1 ? true : false)
+> // if (data.getInt("bbb") == 1 ? true : false)
+> // if (data.getInt("ccc") == 1 ? true : false)
 > ```
-> if (data.getInt("aaa") == 1 ? true : false)
-> if (data.getInt("bbb") == 1 ? true : false)
-> if (data.getInt("ccc") == 1 ? true : false)
->```
 >
-> 以上问题正在逐渐改善，大概（QAQ
+> ~~以上问题正在逐渐改善，大概（QAQ~~
+>
+> **此版本使用Gson重构了大部分解析逻辑，以上问题已不复存在**
 >
 > 很多结构相同的页面（如`稍后再看`、`收藏`等只有一个 `RecyclerView`的页面）都直接使用了共用的一套界面布局。动态和视频的 `Adapter` 和 `Holder` 并没有按照常规套路来写，而是将 `Holder` 独立出来。因为有些页面如搜索页、个人信息页也用到了相同的代码，我就选择了把这些共用代码统一放在同一个类里。这可以减小一部分资源浪费，也易于整体修改。
 >

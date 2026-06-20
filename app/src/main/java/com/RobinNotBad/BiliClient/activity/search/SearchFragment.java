@@ -67,10 +67,14 @@ public class SearchFragment extends Fragment {
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 super.onScrolled(recyclerView, dx, dy);
                 if (listener != null) {
-                    LinearLayoutManager manager = (LinearLayoutManager) recyclerView.getLayoutManager();
-                    assert manager != null;
-                    int lastItemPosition = manager.findLastVisibleItemPosition();  //获取最后一个显示的itemPosition
-                    int itemCount = manager.getItemCount();
+                    RecyclerView.LayoutManager lm = recyclerView.getLayoutManager();
+                    int lastItemPosition = -1;
+                    int itemCount = 0;
+                    if (lm instanceof LinearLayoutManager) {
+                        LinearLayoutManager manager = (LinearLayoutManager) lm;
+                        lastItemPosition = manager.findLastVisibleItemPosition();
+                        itemCount = manager.getItemCount();
+                    }
                     if (lastItemPosition >= (itemCount - 3) && dy > 0 && !swipeRefreshLayout.isRefreshing() && !bottom) {// 滑动到倒数第三个就可以刷新了
                         goOnLoad();
                     }

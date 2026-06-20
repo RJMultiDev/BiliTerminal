@@ -48,42 +48,45 @@ public class Reply implements Serializable {
      * @throws JSONException json解析异常
      */
     public Reply(boolean isRoot, JSONObject replyJson) throws JSONException {
-        this.rpid = replyJson.getLong("rpid");
-        this.oid = replyJson.getLong("oid");
-        this.root = replyJson.getLong("root");
-        this.parent = replyJson.getLong("parent");
-        this.sender = new UserInfo(replyJson.getJSONObject("member"));
+        this.rpid = replyJson.optLong("rpid", 0);
+        this.oid = replyJson.optLong("oid", 0);
+        this.root = replyJson.optLong("root", 0);
+        this.parent = replyJson.optLong("parent", 0);
 
-        JSONObject content = replyJson.getJSONObject("content");
+        JSONObject memberJson = replyJson.optJSONObject("member");
+        if (memberJson == null) throw new JSONException("member is null");
+        this.sender = new UserInfo(memberJson);
 
-        JSONObject replyCtrl = replyJson.getJSONObject("reply_control");
-        long ctime = replyJson.getLong("ctime") * 1000;
+        JSONObject content = replyJson.optJSONObject("content");
+        if (content == null) throw new JSONException("content is null");
+
+        JSONObject replyCtrl = replyJson.optJSONObject("reply_control");
+        long ctime = replyJson.optLong("ctime", 0) * 1000;
 
         String time;
-        if (System.currentTimeMillis() - ctime < 3 * 24 * 60 * 60 * 1000 && replyCtrl.has("time_desc")) {
-            time = replyCtrl.getString("time_desc");
+        if (replyCtrl != null && System.currentTimeMillis() - ctime < 3 * 24 * 60 * 60 * 1000 && replyCtrl.has("time_desc")) {
+            time = replyCtrl.optString("time_desc", "");
         } else {
             time = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.SIMPLIFIED_CHINESE).format(ctime);
         }
 
-        if (replyCtrl.has("location")) {
-            time += " | IP:" + replyCtrl.getString("location").substring(5);  //这字符串还是切割一下吧不然太长了，只留个地址，前缀去了
+        if (replyCtrl != null && replyCtrl.has("location")) {
+            String loc = replyCtrl.optString("location", "");
+            if (loc.length() > 5) time += " | IP:" + loc.substring(5);
         }
         this.pubTime = time;
 
-        if (replyCtrl.has("is_up_top")) {
-            if (replyCtrl.getBoolean("is_up_top")) {
-                this.isTop = true;
-            }
+        if (replyCtrl != null && replyCtrl.optBoolean("is_up_top", false)) {
+            this.isTop = true;
         }
 
         SpannableStringBuilder messageSpannable = new SpannableStringBuilder((isTop ? TOP_TIP : "")
-                + StringUtil.htmlToString(content.getString("message")));
+                + StringUtil.htmlToString(content.optString("message", "")));
 
         if (isTop) StringUtil.setTopSpan(messageSpannable);
 
-        this.likeCount = replyJson.getInt("like");
-        this.liked = replyJson.getInt("action") == 1;
+        this.likeCount = replyJson.optInt("like", 0);
+        this.liked = replyJson.optInt("action", 0) == 1;
 
         if (content.has("emote") && !content.isNull("emote")) {
             ArrayList<Emote> emoteList = new ArrayList<>();
@@ -114,9 +117,9 @@ public class Reply implements Serializable {
             }
         }
 
-        JSONObject upAction = replyJson.getJSONObject("up_action");
-        this.upLiked = upAction.getBoolean("like");
-        this.upReplied = upAction.getBoolean("reply");
+        JSONObject upAction = replyJson.optJSONObject("up_action");
+        this.upLiked = upAction != null && upAction.optBoolean("like", false);
+        this.upReplied = upAction != null && upAction.optBoolean("reply", false);
 
 
         if (isRoot) {
@@ -130,7 +133,7 @@ public class Reply implements Serializable {
                 this.pictureList = pictureList;
             }
 
-            this.childCount = replyJson.getInt("rcount");
+            this.childCount = replyJson.optInt("rcount", 0);
 
             if (replyJson.has("replies") && !replyJson.isNull("replies")) {
                 ArrayList<Reply> childMsgList = new ArrayList<>();

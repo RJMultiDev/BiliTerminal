@@ -4,6 +4,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 
 import com.RobinNotBad.BiliClient.util.SharedPreferencesUtil;
+import com.google.gson.annotations.SerializedName;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -12,9 +13,12 @@ import java.io.Serializable;
 
 public class UserInfo implements Parcelable, Serializable {
     public long mid;
+    @SerializedName(value = "name", alternate = {"uname"})
     public String name;
+    @SerializedName(value = "face", alternate = {"avatar"})
     public String avatar;
     public String sign;
+    @SerializedName(value = "follower", alternate = {"fans"})
     public int fans;
     public int level;
     public int following;
@@ -129,18 +133,23 @@ public class UserInfo implements Parcelable, Serializable {
     }
 
     public UserInfo(JSONObject userInfoJson) throws JSONException {
-        this.level = userInfoJson.getJSONObject("level_info").getInt("current_level");
-        this.mid = userInfoJson.getLong("mid");
-        this.name = userInfoJson.getString("uname");
-        this.avatar = userInfoJson.getString("avatar");
-        this.is_senior_member = userInfoJson.getInt("is_senior_member");
-        JSONObject vip = userInfoJson.getJSONObject("vip");
-        this.vip_role = vip.getInt("vipStatus");
-        this.vip_nickname_color = vip.getString("nickname_color");
+        JSONObject levelInfo = userInfoJson.optJSONObject("level_info");
+        this.level = levelInfo != null ? levelInfo.optInt("current_level", 0) : 0;
+        this.mid = userInfoJson.optLong("mid", 0);
+        this.name = userInfoJson.optString("uname", userInfoJson.optString("name", ""));
+        this.avatar = userInfoJson.optString("avatar", userInfoJson.optString("face", ""));
+        this.is_senior_member = userInfoJson.optInt("is_senior_member", 0);
+        JSONObject vip = userInfoJson.optJSONObject("vip");
+        if (vip != null) {
+            this.vip_role = vip.optInt("vipStatus", 0);
+            this.vip_nickname_color = vip.optString("nickname_color", "");
+        }
         if ((!userInfoJson.isNull("fans_detail")) && (!SharedPreferencesUtil.getBoolean(SharedPreferencesUtil.NO_MEDAL, false))) {
-            JSONObject fans_detail = userInfoJson.getJSONObject("fans_detail");
-            this.medal_name = fans_detail.getString("medal_name");
-            this.medal_level = fans_detail.getInt("level");
+            JSONObject fans_detail = userInfoJson.optJSONObject("fans_detail");
+            if (fans_detail != null) {
+                this.medal_name = fans_detail.optString("medal_name", "");
+                this.medal_level = fans_detail.optInt("level", 0);
+            }
         }
     }
 

@@ -1,16 +1,15 @@
 package com.RobinNotBad.BiliClient.api;
 
-import android.util.Log;
-
+import com.RobinNotBad.BiliClient.model.ApiResponse;
 import com.RobinNotBad.BiliClient.model.Bangumi;
 import com.RobinNotBad.BiliClient.model.VideoCard;
+import com.RobinNotBad.BiliClient.util.GsonUtil;
 import com.RobinNotBad.BiliClient.util.NetWorkUtil;
 import com.RobinNotBad.BiliClient.util.SharedPreferencesUtil;
 import com.RobinNotBad.BiliClient.util.StringUtil;
+import com.google.gson.annotations.SerializedName;
 
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -18,36 +17,226 @@ import java.util.List;
 import java.util.Objects;
 
 public class BangumiApi {
-    public static int getFollowingList(int page, List<VideoCard> cardList) throws JSONException, IOException {
-        String url = "https://api.bilibili.com/x/space/bangumi/follow/list?type=1&follow_status=0&pn=" + page
-                + "&ps=15&vmid=" + SharedPreferencesUtil.getLong("mid", 0);
 
-        JSONObject all = NetWorkUtil.getJson(url);
-        if (all.getInt("code") != 0) throw new JSONException(all.getString("message"));
+    public static class BangumiFollowData {
+        @SerializedName("list")
+        public List<BangumiFollowItem> list;
+    }
 
-        JSONObject data = all.getJSONObject("data");
-        if (!data.has("list") || data.isNull("list")) return 1;
+    public static class BangumiFollowItem {
+        @SerializedName("media_id")
+        public long media_id;
+        @SerializedName("title")
+        public String title;
+        @SerializedName("cover")
+        public String cover;
+        @SerializedName("stat")
+        public FollowStat stat;
+    }
 
-        JSONArray list = data.getJSONArray("list");
-        if (list.length() == 0) return 1;
+    public static class FollowStat {
+        @SerializedName("view")
+        public int view;
+    }
 
-        for (int i = 0; i < list.length(); i++) {
-            JSONObject bangumi = list.getJSONObject(i);
+    public static class ReviewData {
+        @SerializedName("result")
+        public ReviewResult result;
+    }
+
+    public static class ReviewResult {
+        @SerializedName("media")
+        public MediaData media;
+    }
+
+    public static class MediaData {
+        @SerializedName("media_id")
+        public long media_id;
+        @SerializedName("season_id")
+        public long season_id;
+        @SerializedName("title")
+        public String title;
+        @SerializedName("cover")
+        public String cover;
+        @SerializedName("horizontal_picture")
+        public String horizontal_picture;
+        @SerializedName("type")
+        public int type;
+        @SerializedName("type_name")
+        public String type_name;
+        @SerializedName("new_ep")
+        public NewEpData new_ep;
+        @SerializedName("rating")
+        public RatingData rating;
+        @SerializedName("areas")
+        public List<AreaData> areas;
+    }
+
+    public static class NewEpData {
+        @SerializedName("index_show")
+        public String index_show;
+    }
+
+    public static class RatingData {
+        @SerializedName("count")
+        public int count;
+        @SerializedName("score")
+        public float score;
+    }
+
+    public static class AreaData {
+        @SerializedName("name")
+        public String name;
+    }
+
+    public static class SeasonDetailData {
+        @SerializedName("result")
+        public SeasonResult result;
+    }
+
+    public static class SeasonResult {
+        @SerializedName("evaluate")
+        public String evaluate;
+        @SerializedName("staff")
+        public String staff;
+        @SerializedName("record")
+        public String record;
+        @SerializedName("subtitle")
+        public String subtitle;
+        @SerializedName("publish")
+        public PublishData publish;
+        @SerializedName("styles")
+        public List<String> styles;
+        @SerializedName("stat")
+        public SeasonStat stat;
+        @SerializedName("up_info")
+        public UpInfoData up_info;
+        @SerializedName("series")
+        public SeriesData series;
+        @SerializedName("seasons")
+        public List<SeasonItem> seasons;
+    }
+
+    public static class PublishData {
+        @SerializedName("is_finish")
+        public int is_finish;
+        @SerializedName("is_started")
+        public int is_started;
+        @SerializedName("pub_time")
+        public String pub_time;
+        @SerializedName("pub_time_show")
+        public String pub_time_show;
+    }
+
+    public static class SeasonStat {
+        @SerializedName("favorites")
+        public int favorites;
+        @SerializedName("series_follow")
+        public int series_follow;
+        @SerializedName("views")
+        public int views;
+        @SerializedName("vt")
+        public int vt;
+    }
+
+    public static class UpInfoData {
+        @SerializedName("mid")
+        public long mid;
+        @SerializedName("name")
+        public String name;
+        @SerializedName("avatar")
+        public String avatar;
+    }
+
+    public static class SeriesData {
+        @SerializedName("series_id")
+        public long series_id;
+        @SerializedName("series_title")
+        public String series_title;
+    }
+
+    public static class SeasonItem {
+        @SerializedName("media_id")
+        public long media_id;
+        @SerializedName("season_id")
+        public long season_id;
+        @SerializedName("season_title")
+        public String season_title;
+        @SerializedName("cover")
+        public String cover;
+        @SerializedName("badge")
+        public String badge;
+    }
+
+    public static class SectionData {
+        @SerializedName("result")
+        public SectionResult result;
+    }
+
+    public static class SectionResult {
+        @SerializedName("main_section")
+        public SectionItem main_section;
+        @SerializedName("section")
+        public List<SectionItem> section;
+    }
+
+    public static class SectionItem {
+        @SerializedName("id")
+        public long id;
+        @SerializedName("title")
+        public String title;
+        @SerializedName("type")
+        public int type;
+        @SerializedName("episodes")
+        public List<EpisodeData> episodes;
+    }
+
+    public static class EpisodeData {
+        @SerializedName("id")
+        public long id;
+        @SerializedName("aid")
+        public long aid;
+        @SerializedName("cid")
+        public long cid;
+        @SerializedName("cover")
+        public String cover;
+        @SerializedName("badge")
+        public String badge;
+        @SerializedName("title")
+        public String title;
+        @SerializedName("long_title")
+        public String long_title;
+    }
+
+    public static class SeasonIdData {
+        @SerializedName("result")
+        public SeasonIdResult result;
+    }
+
+    public static class SeasonIdResult {
+        @SerializedName("media_id")
+        public long media_id;
+    }
+
+    public static int getFollowingList(int page, List<VideoCard> cardList) throws IOException, JSONException {
+        String url = "https://api.bilibili.com/x/space/bangumi/follow/list?type=1&follow_status=0&pn=" + page + "&ps=15&vmid=" + SharedPreferencesUtil.getLong("mid", 0);
+        String json = NetWorkUtil.getJson(url).toString();
+        ApiResponse<BangumiFollowData> resp = GsonUtil.fromJson(json, new com.google.gson.reflect.TypeToken<ApiResponse<BangumiFollowData>>(){}.getType());
+        if (resp == null || !resp.isSuccess() || resp.data == null || resp.data.list == null || resp.data.list.isEmpty()) return 1;
+        for (BangumiFollowItem item : resp.data.list) {
+            if (item == null) continue;
             VideoCard card = new VideoCard();
             card.type = "media_bangumi";
-            card.aid = bangumi.getLong("media_id");
-            card.title = bangumi.getString("title");
-            card.cover = bangumi.getString("cover");
-            card.view = StringUtil.toWan(bangumi.getJSONObject("stat").optInt("view"));
-
+            card.aid = item.media_id;
+            card.title = item.title;
+            card.cover = item.cover;
+            card.view = StringUtil.toWan(item.stat != null ? item.stat.view : 0);
             cardList.add(card);
         }
         return 0;
     }
 
-
-    //获取番剧信息, 详情页需要有基本的cover, 信息等
-    public static Bangumi getBangumi(long mediaId) throws JSONException, IOException {
+    public static Bangumi getBangumi(long mediaId) throws IOException, JSONException {
         Bangumi bangumi = new Bangumi();
         bangumi.info = getInfo(mediaId);
         bangumi.sectionList = getSections(bangumi.info.season_id);
@@ -56,189 +245,123 @@ public class BangumiApi {
 
     public static Long getMdidFromEpid(long epid) {
         try {
-            String url = "https://api.bilibili.com/pgc/view/web/season?ep_id=" + epid;
-            JSONObject all = NetWorkUtil.getJson(url);
-
-            Log.e("debug-epid", String.valueOf(epid));
-
-            int code = all.getInt("code");
-            if (code != 0) return 0L;
-
-            return all.getJSONObject("result").getLong("media_id");
-        } catch (Exception e) {
-            e.printStackTrace();
-            return 0L;
-        }
+            String json = NetWorkUtil.getJson("https://api.bilibili.com/pgc/view/web/season?ep_id=" + epid).toString();
+            SeasonIdData data = GsonUtil.fromJson(json, SeasonIdData.class);
+            return (data != null && data.result != null) ? data.result.media_id : 0L;
+        } catch (Exception e) { return 0L; }
     }
 
     public static Bangumi.Info getInfo(long mediaId) throws IOException, JSONException {
-        // 先获取基本信息
-        String url1 = "https://api.bilibili.com/pgc/review/user?media_id=" + mediaId;
-        JSONObject all1 = NetWorkUtil.getJson(url1);
-
-        int code1 = all1.getInt("code");
-        if (code1 != 0) {
-            throw new JSONException("错误码：" + code1);
-        }
-
-        JSONObject media = all1.getJSONObject("result").getJSONObject("media");
+        String json1 = NetWorkUtil.getJson("https://api.bilibili.com/pgc/review/user?media_id=" + mediaId).toString();
+        ReviewData review = GsonUtil.fromJson(json1, ReviewData.class);
+        if (review == null || review.result == null || review.result.media == null) throw new JSONException("获取番剧信息失败");
+        MediaData media = review.result.media;
 
         Bangumi.Info info = new Bangumi.Info();
-        info.media_id = media.getLong("media_id");
-        info.season_id = media.getLong("season_id");
-        info.title = media.getString("title");
-        info.cover = media.getString("cover");
-        info.cover_horizontal = media.getString("horizontal_picture");
-        info.type = media.getInt("type");
-        info.type_name = media.getString("type_name");
-
-        JSONObject new_ep = media.optJSONObject("new_ep");
-        if (new_ep != null) {
-            info.indexShow = new_ep.optString("index_show", "敬请期待");
-        }
-
-        JSONObject rating = media.optJSONObject("rating");
-        if (rating != null) {
-            info.count = rating.optInt("count");
-            info.score = (float) rating.optDouble("score", 0);
-        }
-
-        JSONArray areas = media.getJSONArray("areas");
-        StringBuilder stringBuilder = new StringBuilder();
-        for (int i = 0; i < areas.length(); i++) {
-            stringBuilder.append(areas.getJSONObject(i).getString("name"));
-            if (i < areas.length() - 1) {
-                stringBuilder.append(" | ");
+        info.media_id = media.media_id;
+        info.season_id = media.season_id;
+        info.title = media.title;
+        info.cover = media.cover;
+        info.cover_horizontal = media.horizontal_picture;
+        info.type = media.type;
+        info.type_name = media.type_name;
+        info.indexShow = media.new_ep != null ? media.new_ep.index_show : "敬请期待";
+        if (media.rating != null) { info.count = media.rating.count; info.score = media.rating.score; }
+        if (media.areas != null) {
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < media.areas.size(); i++) {
+                if (i > 0) sb.append(" | ");
+                AreaData area = media.areas.get(i);
+                if (area != null) sb.append(area.name);
             }
+            info.area_name = sb.toString();
         }
-        info.area_name = stringBuilder.toString();
 
-        // 获取详细信息
-        String url2 = "https://api.bilibili.com/pgc/view/web/season?season_id=" + info.season_id;
-        JSONObject all2 = NetWorkUtil.getJson(url2);
-
-        int code2 = all2.getInt("code");
-        if (code2 == 0) {
-            JSONObject result = all2.getJSONObject("result");
-
-            info.evaluate = result.optString("evaluate", "");
-            info.staff = result.optString("staff", "");
-            info.record = result.optString("record", "");
-            info.subtitle = result.optString("subtitle", "");
-
-            // 发布时间信息
-            JSONObject publish = result.optJSONObject("publish");
-            if (publish != null) {
+        String json2 = NetWorkUtil.getJson("https://api.bilibili.com/pgc/view/web/season?season_id=" + info.season_id).toString();
+        SeasonDetailData detail = GsonUtil.fromJson(json2, SeasonDetailData.class);
+        if (detail != null && detail.result != null) {
+            SeasonResult r = detail.result;
+            info.evaluate = r.evaluate;
+            info.staff = r.staff;
+            info.record = r.record;
+            info.subtitle = r.subtitle;
+            if (r.publish != null) {
                 info.publish = new Bangumi.Publish();
-                info.publish.is_finish = publish.optInt("is_finish", 0);
-                info.publish.is_started = publish.optInt("is_started", 0);
-                info.publish.pub_time = publish.optString("pub_time", "");
-                info.publish.pub_time_show = publish.optString("pub_time_show", "");
+                info.publish.is_finish = r.publish.is_finish;
+                info.publish.is_started = r.publish.is_started;
+                info.publish.pub_time = r.publish.pub_time;
+                info.publish.pub_time_show = r.publish.pub_time_show;
             }
-
-            // 标签
-            JSONArray styles = result.optJSONArray("styles");
-            if (styles != null) {
-                info.styles = new ArrayList<>();
-                for (int i = 0; i < styles.length(); i++) {
-                    info.styles.add(styles.getString(i));
-                }
-            }
-
-            // 状态数
-            JSONObject stat = result.optJSONObject("stat");
-            if (stat != null) {
+            info.styles = r.styles != null ? new ArrayList<>(r.styles) : new ArrayList<>();
+            if (r.stat != null) {
                 info.stat = new Bangumi.Stat();
-                info.stat.favorites = stat.optInt("favorites", 0);
-                info.stat.series_follow = stat.optInt("series_follow", 0);
-                info.stat.views = stat.optInt("views", 0);
-                info.stat.vt = stat.optInt("vt", 0);
+                info.stat.favorites = r.stat.favorites;
+                info.stat.series_follow = r.stat.series_follow;
+                info.stat.views = r.stat.views;
+                info.stat.vt = r.stat.vt;
             }
-
-            // UP主信息
-            JSONObject upInfo = result.optJSONObject("up_info");
-            if (upInfo != null) {
+            if (r.up_info != null) {
                 info.up_info = new Bangumi.UpInfo();
-                info.up_info.mid = upInfo.optLong("mid", 0);
-                info.up_info.name = upInfo.optString("name", "");
-                info.up_info.avatar = upInfo.optString("avatar", "");
+                info.up_info.mid = r.up_info.mid;
+                info.up_info.name = r.up_info.name;
+                info.up_info.avatar = r.up_info.avatar;
             }
-
-            // 系列信息
-            JSONObject series = result.optJSONObject("series");
-            if (series != null) {
+            if (r.series != null) {
                 info.series = new Bangumi.Series();
-                info.series.series_id = series.optLong("series_id", 0);
-                info.series.series_title = series.optString("series_title", "");
+                info.series.series_id = r.series.series_id;
+                info.series.series_title = r.series.series_title;
             }
-
-            // 同系列所有季信息
-            JSONArray seasons = result.optJSONArray("seasons");
-            if (seasons != null) {
+            if (r.seasons != null) {
                 info.seasons = new ArrayList<>();
-                for (int i = 0; i < seasons.length(); i++) {
-                    JSONObject seasonObj = seasons.getJSONObject(i);
+                for (SeasonItem s : r.seasons) {
+                    if (s == null) continue;
                     Bangumi.Season season = new Bangumi.Season();
-                    season.media_id = seasonObj.optLong("media_id", 0);
-                    season.season_id = seasonObj.optLong("season_id", 0);
-                    season.season_title = seasonObj.optString("season_title", "");
-                    season.cover = seasonObj.optString("cover", "");
-                    season.badge = seasonObj.optString("badge", "");
+                    season.media_id = s.media_id;
+                    season.season_id = s.season_id;
+                    season.season_title = s.season_title;
+                    season.cover = s.cover;
+                    season.badge = s.badge;
                     info.seasons.add(season);
                 }
             }
         }
-
         return info;
     }
 
     public static ArrayList<Bangumi.Section> getSections(long season_id) throws IOException, JSONException {
-        String url = "https://api.bilibili.com/pgc/web/season/section?season_id=" + season_id;
-        JSONObject all = new JSONObject(Objects.requireNonNull(Objects.requireNonNull(NetWorkUtil.get(url)).body()).string());  //得到一整个json
-        JSONObject result = all.getJSONObject("result");
+        String json = new String(Objects.requireNonNull(Objects.requireNonNull(NetWorkUtil.get("https://api.bilibili.com/pgc/web/season/section?season_id=" + season_id)).body()).bytes());
+        SectionData data = GsonUtil.fromJson(json, SectionData.class);
         ArrayList<Bangumi.Section> sectionList = new ArrayList<>();
-
-        JSONObject main_section = result.optJSONObject("main_section");
-        if (main_section != null)
-            sectionList.add(analyzeSection(result.getJSONObject("main_section")));
-
-        JSONArray other_sections = result.optJSONArray("section");
-        if (other_sections != null) {
-            for (int i = 0; i < other_sections.length(); i++) {
-                sectionList.add(analyzeSection(other_sections.getJSONObject(i)));
+        if (data == null || data.result == null) return sectionList;
+        if (data.result.main_section != null) sectionList.add(buildSection(data.result.main_section));
+        if (data.result.section != null) {
+            for (SectionItem item : data.result.section) {
+                if (item != null) sectionList.add(buildSection(item));
             }
         }
-
         return sectionList;
     }
 
-    public static Bangumi.Section analyzeSection(JSONObject jsonObject) throws JSONException {
+    private static Bangumi.Section buildSection(SectionItem item) {
         Bangumi.Section section = new Bangumi.Section();
-        section.id = jsonObject.getLong("id");
-        section.title = jsonObject.getString("title");
-        section.type = jsonObject.getInt("type");
-
-        JSONArray episodes = jsonObject.getJSONArray("episodes");
-        ArrayList<Bangumi.Episode> episodeList = new ArrayList<>();
-        for (int i = 0; i < episodes.length(); i++) {
-            episodeList.add(analyzeEpisode(episodes.getJSONObject(i)));
+        section.id = item.id;
+        section.title = item.title;
+        section.type = item.type;
+        section.episodeList = new ArrayList<>();
+        if (item.episodes != null) {
+            for (EpisodeData ep : item.episodes) {
+                if (ep == null) continue;
+                Bangumi.Episode episode = new Bangumi.Episode();
+                episode.id = ep.id;
+                episode.aid = ep.aid;
+                episode.cid = ep.cid;
+                episode.cover = ep.cover;
+                episode.badge = ep.badge;
+                episode.title = ep.title;
+                episode.title_long = ep.long_title;
+                section.episodeList.add(episode);
+            }
         }
-        section.episodeList = episodeList;
-
         return section;
     }
-
-    public static Bangumi.Episode analyzeEpisode(JSONObject jsonObject) throws JSONException {
-        Bangumi.Episode episode = new Bangumi.Episode();
-        episode.id = jsonObject.getLong("id");
-        episode.aid = jsonObject.getLong("aid");
-        episode.cid = jsonObject.getLong("cid");
-        episode.cover = jsonObject.getString("cover");
-        episode.badge = jsonObject.getString("badge");
-        episode.title = jsonObject.getString("title");
-        episode.title_long = jsonObject.getString("long_title");
-
-        return episode;
-    }
 }
-

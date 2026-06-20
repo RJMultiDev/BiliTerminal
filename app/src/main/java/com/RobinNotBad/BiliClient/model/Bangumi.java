@@ -1,6 +1,7 @@
 package com.RobinNotBad.BiliClient.model;
 
 import com.RobinNotBad.BiliClient.util.SharedPreferencesUtil;
+import com.google.gson.annotations.SerializedName;
 
 import java.util.ArrayList;
 
@@ -16,9 +17,11 @@ public class Bangumi {
         public float score;
         public String title;
         public String cover;
+        @SerializedName("horizontal_picture")
         public String cover_horizontal;
         public String type_name;
         public String area_name;
+        @SerializedName("index_show")
         public String indexShow;
 
         // 新增字段
@@ -82,6 +85,7 @@ public class Bangumi {
         public long aid;
         public long cid;
         public String title;
+        @SerializedName("long_title")
         public String title_long;
         public String cover;
         public String badge;//标记（如会员/限免）

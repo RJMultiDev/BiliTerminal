@@ -4,14 +4,17 @@ import android.annotation.SuppressLint;
 import android.text.SpannableStringBuilder;
 import android.util.Pair;
 
+import com.RobinNotBad.BiliClient.model.ApiResponse;
 import com.RobinNotBad.BiliClient.model.At;
 import com.RobinNotBad.BiliClient.model.Collection;
 import com.RobinNotBad.BiliClient.model.Stats;
 import com.RobinNotBad.BiliClient.model.UserInfo;
 import com.RobinNotBad.BiliClient.model.VideoInfo;
+import com.RobinNotBad.BiliClient.util.GsonUtil;
 import com.RobinNotBad.BiliClient.util.Logu;
 import com.RobinNotBad.BiliClient.util.NetWorkUtil;
 import com.RobinNotBad.BiliClient.util.StringUtil;
+import com.google.gson.annotations.SerializedName;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,85 +25,262 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
 
-
-//视频信息API 自己写的
-
-
 public class VideoInfoApi {
-    public static VideoInfo getVideoInfo(String bvid) throws IOException, JSONException {  //通过bvid获取json
+
+    public static class VideoInfoData {
+        @SerializedName("title")
+        public String title;
+        @SerializedName("pic")
+        public String pic;
+        @SerializedName("desc")
+        public String desc;
+        @SerializedName("desc_v2")
+        public List<DescV2> desc_v2;
+        @SerializedName("bvid")
+        public String bvid;
+        @SerializedName("aid")
+        public long aid;
+        @SerializedName("pubdate")
+        public long pubdate;
+        @SerializedName("duration")
+        public int duration;
+        @SerializedName("copyright")
+        public int copyright;
+        @SerializedName("stat")
+        public StatData stat;
+        @SerializedName("pages")
+        public List<PageData> pages;
+        @SerializedName("is_upower_exclusive")
+        public boolean is_upower_exclusive;
+        @SerializedName("rights")
+        public RightsData rights;
+        @SerializedName("staff")
+        public List<StaffData> staff;
+        @SerializedName("owner")
+        public OwnerData owner;
+        @SerializedName("argue_info")
+        public ArgueInfoData argue_info;
+        @SerializedName("redirect_url")
+        public String redirect_url;
+        @SerializedName("ugc_season")
+        public UgcSeasonData ugc_season;
+    }
+
+    public static class DescV2 {
+        @SerializedName("type")
+        public int type;
+        @SerializedName("raw_text")
+        public String raw_text;
+        @SerializedName("biz_id")
+        public long biz_id;
+    }
+
+    public static class StatData {
+        @SerializedName("view")
+        public int view;
+        @SerializedName("like")
+        public int like;
+        @SerializedName("coin")
+        public int coin;
+        @SerializedName("reply")
+        public int reply;
+        @SerializedName("danmaku")
+        public int danmaku;
+        @SerializedName("favorite")
+        public int favorite;
+    }
+
+    public static class PageData {
+        @SerializedName("part")
+        public String part;
+        @SerializedName("cid")
+        public long cid;
+    }
+
+    public static class RightsData {
+        @SerializedName("is_cooperation")
+        public int is_cooperation;
+        @SerializedName("is_stein_gate")
+        public int is_stein_gate;
+        @SerializedName("is_360")
+        public int is_360;
+    }
+
+    public static class StaffData {
+        @SerializedName("mid")
+        public long mid;
+        @SerializedName("title")
+        public String title;
+        @SerializedName("name")
+        public String name;
+        @SerializedName("face")
+        public String face;
+        @SerializedName("follower")
+        public int follower;
+        @SerializedName("official")
+        public OfficialData official;
+    }
+
+    public static class OfficialData {
+        @SerializedName("role")
+        public int role;
+        @SerializedName("title")
+        public String title;
+    }
+
+    public static class OwnerData {
+        @SerializedName("name")
+        public String name;
+        @SerializedName("face")
+        public String face;
+        @SerializedName("mid")
+        public long mid;
+    }
+
+    public static class ArgueInfoData {
+        @SerializedName("argue_msg")
+        public String argue_msg;
+    }
+
+    public static class UgcSeasonData {
+        @SerializedName("id")
+        public int id;
+        @SerializedName("title")
+        public String title;
+        @SerializedName("intro")
+        public String intro;
+        @SerializedName("cover")
+        public String cover;
+        @SerializedName("mid")
+        public long mid;
+        @SerializedName("stat")
+        public UgcStatData stat;
+        @SerializedName("sections")
+        public List<UgcSectionData> sections;
+    }
+
+    public static class UgcStatData {
+        @SerializedName("view")
+        public long view;
+    }
+
+    public static class UgcSectionData {
+        @SerializedName("season_id")
+        public int season_id;
+        @SerializedName("id")
+        public int id;
+        @SerializedName("title")
+        public String title;
+        @SerializedName("episodes")
+        public List<UgcEpisodeData> episodes;
+    }
+
+    public static class UgcEpisodeData {
+        @SerializedName("season_id")
+        public int season_id;
+        @SerializedName("section_id")
+        public int section_id;
+        @SerializedName("id")
+        public int id;
+        @SerializedName("aid")
+        public long aid;
+        @SerializedName("cid")
+        public long cid;
+        @SerializedName("title")
+        public String title;
+        @SerializedName("arc")
+        public VideoInfoData arc;
+        @SerializedName("bvid")
+        public String bvid;
+    }
+
+    public static class TagData {
+        @SerializedName("tag_name")
+        public String tag_name;
+    }
+
+    public static VideoInfo getVideoInfo(String bvid) throws IOException, JSONException {
         String url = "https://api.bilibili.com/x/web-interface/view?bvid=" + bvid;
-        JSONObject result = NetWorkUtil.getJson(url);
-        if (!result.has("data")) return null;
-        VideoInfo videoInfo = getInfoByJson(result.getJSONObject("data"));
+        String json = NetWorkUtil.getJson(url).toString();
+        ApiResponse<VideoInfoData> resp = GsonUtil.fromJson(json,
+                new com.google.gson.reflect.TypeToken<ApiResponse<VideoInfoData>>(){}.getType());
+        if (resp == null || !resp.isSuccess() || resp.data == null) return null;
+        VideoInfo videoInfo = buildVideoInfo(resp.data);
         LikeCoinFavApi.getVideoStats(videoInfo);
         return videoInfo;
     }
 
-    public static VideoInfo getVideoInfo(long aid) throws IOException, JSONException {  //通过aid获取json
+    public static VideoInfo getVideoInfo(long aid) throws IOException, JSONException {
         String url = "https://api.bilibili.com/x/web-interface/view?aid=" + aid;
-        JSONObject result = NetWorkUtil.getJson(url);
-        if (!result.has("data")) return null;
-        VideoInfo videoInfo = getInfoByJson(result.getJSONObject("data"));
+        String json = NetWorkUtil.getJson(url).toString();
+        ApiResponse<VideoInfoData> resp = GsonUtil.fromJson(json,
+                new com.google.gson.reflect.TypeToken<ApiResponse<VideoInfoData>>(){}.getType());
+        if (resp == null || !resp.isSuccess() || resp.data == null) return null;
+        VideoInfo videoInfo = buildVideoInfo(resp.data);
         LikeCoinFavApi.getVideoStats(videoInfo);
         return videoInfo;
     }
 
-
-    public static String getTags(String bvid) throws IOException, JSONException {  //通过bvid获取tag
+    public static String getTags(String bvid) throws IOException, JSONException {
         String url = "https://api.bilibili.com/x/tag/archive/tags?bvid=" + bvid;
-        JSONObject result = NetWorkUtil.getJson(url);
-        return analyzeTags(result.getJSONArray("data"));
-    }
-
-    public static String getTags(long aid) throws IOException, JSONException {  //通过aid获取tag
-        String url = "https://api.bilibili.com/x/tag/archive/tags?aid=" + aid;
-        JSONObject result = NetWorkUtil.getJson(url);
-        return analyzeTags(result.getJSONArray("data"));
-    }
-
-    public static String analyzeTags(JSONArray tagJson) throws JSONException {
+        String json = NetWorkUtil.getJson(url).toString();
+        ApiResponse<List<TagData>> resp = GsonUtil.fromJson(json,
+                new com.google.gson.reflect.TypeToken<ApiResponse<List<TagData>>>(){}.getType());
+        if (resp == null || resp.data == null) return "";
         StringBuilder tags = new StringBuilder();
-        for (int i = 0; i < tagJson.length(); i++) {
+        for (int i = 0; i < resp.data.size(); i++) {
             if (i > 0) tags.append("/");
-            tags.append(((JSONObject) tagJson.get(i)).getString("tag_name"));
+            TagData tag = resp.data.get(i);
+            if (tag != null) tags.append(tag.tag_name);
         }
         return tags.toString();
     }
 
-    public static Collection analyzeUgcSeason(JSONObject json) throws JSONException {
+    public static String getTags(long aid) throws IOException, JSONException {
+        String url = "https://api.bilibili.com/x/tag/archive/tags?aid=" + aid;
+        String json = NetWorkUtil.getJson(url).toString();
+        ApiResponse<List<TagData>> resp = GsonUtil.fromJson(json,
+                new com.google.gson.reflect.TypeToken<ApiResponse<List<TagData>>>(){}.getType());
+        if (resp == null || resp.data == null) return "";
+        StringBuilder tags = new StringBuilder();
+        for (int i = 0; i < resp.data.size(); i++) {
+            if (i > 0) tags.append("/");
+            TagData tag = resp.data.get(i);
+            if (tag != null) tags.append(tag.tag_name);
+        }
+        return tags.toString();
+    }
+
+    public static Collection analyzeUgcSeason(UgcSeasonData data) {
         Collection collection = new Collection();
-        collection.id = json.optInt("id", -1);
-        collection.title = json.optString("title");
-        collection.intro = json.optString("intro");
-        collection.cover = json.optString("cover");
-        collection.mid = json.optLong("mid");
-        collection.view = StringUtil.toWan(json.getJSONObject("stat").optLong("view"));
-        JSONArray sections = json.optJSONArray("sections");
-        if (sections != null) {
+        collection.id = data.id;
+        collection.title = data.title;
+        collection.intro = data.intro;
+        collection.cover = data.cover;
+        collection.mid = data.mid;
+        collection.view = StringUtil.toWan(data.stat != null ? data.stat.view : 0);
+
+        if (data.sections != null) {
             List<Collection.Section> sectionList = new ArrayList<>();
-            for (int i = 0; i < sections.length(); i++) {
-                JSONObject sectionJson = sections.getJSONObject(i);
+            for (UgcSectionData sectionData : data.sections) {
+                if (sectionData == null) continue;
                 Collection.Section section = new Collection.Section();
-                section.season_id = sectionJson.optInt("season_id", -1);
-                section.id = sectionJson.optInt("id", -1);
-                section.title = sectionJson.optString("title");
-                JSONArray episodes = sectionJson.optJSONArray("episodes");
-                if (episodes != null) {
+                section.season_id = sectionData.season_id;
+                section.id = sectionData.id;
+                section.title = sectionData.title;
+                if (sectionData.episodes != null) {
                     List<Collection.Episode> episodeList = new ArrayList<>();
-                    for (int j = 0; j < episodes.length(); j++) {
-                        JSONObject episodeJson = episodes.getJSONObject(j);
+                    for (UgcEpisodeData epData : sectionData.episodes) {
+                        if (epData == null) continue;
                         Collection.Episode episode = new Collection.Episode();
-                        episode.season_id = episodeJson.optInt("season_id", -1);
-                        episode.section_id = episodeJson.optInt("section_id", -1);
-                        episode.id = episodeJson.optInt("id", -1);
-                        episode.aid = episodeJson.optLong("aid", -1);
-                        episode.cid = episodeJson.optLong("cid", -1);
-                        episode.title = episodeJson.optString("title");
-                        JSONObject arc = episodeJson.optJSONObject("arc");
-                        if (arc != null) {
-                            episode.arc = getInfoByJson(arc);
-                        }
-                        episode.bvid = episodeJson.optString("bvid");
+                        episode.season_id = epData.season_id;
+                        episode.section_id = epData.section_id;
+                        episode.id = epData.id;
+                        episode.aid = epData.aid;
+                        episode.cid = epData.cid;
+                        episode.title = epData.title;
+                        episode.bvid = epData.bvid;
+                        if (epData.arc != null) episode.arc = buildVideoInfo(epData.arc);
                         episodeList.add(episode);
                     }
                     section.episodes = episodeList;
@@ -112,136 +292,123 @@ public class VideoInfoApi {
         return collection;
     }
 
-    public static VideoInfo getInfoByJson(JSONObject data) throws JSONException {  //项目实在太多qwq 拆就完事了
+    private static VideoInfo buildVideoInfo(VideoInfoData data) {
         VideoInfo videoInfo = new VideoInfo();
         Logu.v("视频信息", "--------");
-        videoInfo.title = data.getString("title");
-        Logu.v("标题", videoInfo.title);
-        videoInfo.cover = data.getString("pic");
-        Logu.v("封面", videoInfo.cover);
-        if (data.has("desc_v2") && !data.isNull("desc_v2")) {
+
+        videoInfo.title = data.title != null ? data.title : "";
+        videoInfo.cover = data.pic != null ? data.pic : "";
+        videoInfo.bvid = data.bvid != null ? data.bvid : "";
+        videoInfo.aid = data.aid;
+
+        // desc_v2: 需要特殊处理SpannableStringBuilder和At
+        if (data.desc_v2 != null && !data.desc_v2.isEmpty()) {
             SpannableStringBuilder sb = new SpannableStringBuilder();
-            JSONArray descArray = data.getJSONArray("desc_v2");
             ArrayList<At> ats = new ArrayList<>();
-            for (int i = 0; i < descArray.length(); i++) {
-                JSONObject curObj = descArray.getJSONObject(i);
-                int type = curObj.getInt("type");
-                switch (type) {
-                    case 2:
-                        Pair<Integer, Integer> indexs = StringUtil.appendString(sb, "@" + curObj.getString("raw_text"));
-                        ats.add(new At(curObj.getLong("biz_id"), indexs.first, indexs.second));
-                        break;
-                    default:
-                        sb.append(curObj.getString("raw_text"));
-                        break;
+            for (DescV2 desc : data.desc_v2) {
+                if (desc == null) continue;
+                if (desc.type == 2) {
+                    Pair<Integer, Integer> indexs = StringUtil.appendString(sb, "@" + desc.raw_text);
+                    ats.add(new At(desc.biz_id, indexs.first, indexs.second));
+                } else {
+                    sb.append(desc.raw_text != null ? desc.raw_text : "");
                 }
             }
             videoInfo.description = sb.toString();
             videoInfo.descAts = ats;
         } else {
-            videoInfo.description = data.getString("desc");
+            videoInfo.description = data.desc != null ? data.desc : "";
         }
-        Logu.v("简介", videoInfo.description);
-
-        videoInfo.bvid = data.optString("bvid");
-        videoInfo.aid = data.getLong("aid");
 
         @SuppressLint("SimpleDateFormat") SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        videoInfo.timeDesc = sdf.format(data.getLong("pubdate") * 1000);
-        Logu.v("发布时间", String.valueOf(videoInfo.timeDesc));
+        if (data.pubdate > 0) videoInfo.timeDesc = sdf.format(data.pubdate * 1000);
+        videoInfo.duration = StringUtil.toTime(data.duration);
+        videoInfo.copyright = data.copyright;
 
-        videoInfo.duration = StringUtil.toTime(data.getInt("duration"));
-        Logu.v("视频时长", videoInfo.duration);
+        // stat
+        if (data.stat != null) {
+            Stats stats = new Stats();
+            stats.view = data.stat.view;
+            stats.like = data.stat.like;
+            stats.coin = data.stat.coin;
+            stats.reply = data.stat.reply;
+            stats.danmaku = data.stat.danmaku;
+            stats.favorite = data.stat.favorite;
+            stats.coin_limit = (videoInfo.copyright == VideoInfo.COPYRIGHT_REPRINT) ? 1 : 2;
+            videoInfo.stats = stats;
+        }
 
-        if (data.has("copyright") && !data.isNull("copyright"))
-            videoInfo.copyright = data.getInt("copyright");
-
-        JSONObject stat = data.getJSONObject("stat");
-        Stats stats = new Stats();
-        stats.view = stat.getInt("view");
-        stats.like = stat.getInt("like");
-        stats.coin = stat.getInt("coin");
-        stats.reply = stat.getInt("reply");
-        stats.danmaku = stat.getInt("danmaku");
-        stats.favorite = stat.optInt("favorite", -1);
-        stats.coin_limit = (videoInfo.copyright == VideoInfo.COPYRIGHT_REPRINT) ? 1 : 2;
-        videoInfo.stats = stats;
-
-        JSONArray pages = data.optJSONArray("pages");
-        if (pages != null) {
+        // pages
+        if (data.pages != null) {
             ArrayList<String> pagenames = new ArrayList<>();
             ArrayList<Long> cids = new ArrayList<>();
-            for (int i = 0; i < pages.length(); i++) {
-                JSONObject page = pages.getJSONObject(i);
-                String pagename = page.getString("part");
-                pagenames.add(pagename);
-                Logu.v("第" + i + "个视频的标题", pagename);
-                long cid = page.getLong("cid");
-                cids.add(cid);
-                Logu.v("第" + i + "个视频的cid", String.valueOf(cid));
+            for (PageData page : data.pages) {
+                if (page == null) continue;
+                pagenames.add(page.part != null ? page.part : "");
+                cids.add(page.cid);
             }
             videoInfo.pagenames = pagenames;
             videoInfo.cids = cids;
         }
 
-        videoInfo.upowerExclusive = data.optBoolean("is_upower_exclusive", true);
+        videoInfo.upowerExclusive = data.is_upower_exclusive;
 
-        JSONObject rights = data.optJSONObject("rights");
-        if (rights != null) {
-            videoInfo.isCooperation = (rights.optInt("is_cooperation", 0) == 1);
-            videoInfo.isSteinGate = (rights.optInt("is_stein_gate", 0) == 1);
-            videoInfo.is360 = (rights.optInt("is_360", 0) == 1);
+        // rights
+        if (data.rights != null) {
+            videoInfo.isCooperation = data.rights.is_cooperation == 1;
+            videoInfo.isSteinGate = data.rights.is_stein_gate == 1;
+            videoInfo.is360 = data.rights.is_360 == 1;
         }
 
+        // staff / owner
         ArrayList<UserInfo> staff_list = new ArrayList<>();
-        if (videoInfo.isCooperation) { //如果是联合投稿就存储联合UP列表
-            JSONArray staff = data.getJSONArray("staff");
-            for (int i = 0; i < staff.length(); i++) {
-                UserInfo staff_member = new UserInfo();
-                JSONObject staff_info = staff.getJSONObject(i);
-
-                staff_member.mid = staff_info.getLong("mid");
-                staff_member.sign = staff_info.getString("title"); //卡片的简介用来显示参与的事物
-                staff_member.name = staff_info.getString("name");
-                staff_member.avatar = staff_info.getString("face");
-                staff_member.fans = staff_info.getInt("follower");
-                staff_member.level = 6;
-                staff_member.followed = false;
-                staff_member.notice = "";
-                staff_member.official = staff_info.getJSONObject("official").getInt("role");
-                staff_member.officialDesc = staff_info.getJSONObject("official").getString("title");
-
-                staff_list.add(staff_member);
+        if (videoInfo.isCooperation && data.staff != null) {
+            for (StaffData s : data.staff) {
+                if (s == null) continue;
+                UserInfo member = new UserInfo();
+                member.mid = s.mid;
+                member.sign = s.title != null ? s.title : "";
+                member.name = s.name != null ? s.name : "";
+                member.avatar = s.face != null ? s.face : "";
+                member.fans = s.follower;
+                member.level = 6;
+                member.followed = false;
+                member.notice = "";
+                if (s.official != null) {
+                    member.official = s.official.role;
+                    member.officialDesc = s.official.title != null ? s.official.title : "";
+                }
+                staff_list.add(member);
             }
-        } else {
-            if (data.optJSONObject("owner") != null) {
-                JSONObject owner = data.getJSONObject("owner");
-                UserInfo userInfo = new UserInfo();
-                userInfo.name = owner.getString("name");
-                userInfo.avatar = owner.getString("face");
-                userInfo.mid = owner.getLong("mid");
-                userInfo.sign = "UP主";
-                staff_list.add(userInfo);
-            }
+        } else if (data.owner != null) {
+            UserInfo userInfo = new UserInfo();
+            userInfo.name = data.owner.name != null ? data.owner.name : "";
+            userInfo.avatar = data.owner.face != null ? data.owner.face : "";
+            userInfo.mid = data.owner.mid;
+            userInfo.sign = "UP主";
+            staff_list.add(userInfo);
         }
         videoInfo.staff = staff_list;
 
-        if (data.optJSONObject("argue_info") != null) {
-            videoInfo.argueMsg = data.getJSONObject("argue_info").getString("argue_msg");
+        // argue_info
+        if (data.argue_info != null) {
+            videoInfo.argueMsg = data.argue_info.argue_msg;
         }
 
+        // redirect_url (bangumi)
         try {
-            if (data.has("redirect_url") && (!data.getString("redirect_url").isEmpty()) && (data.getString("redirect_url").contains("bangumi")))
-                videoInfo.epid = Long.parseLong(data.getString("redirect_url").replace("https://www.bilibili.com/bangumi/play/ep", ""));
-            else videoInfo.epid = -1;
+            if (data.redirect_url != null && !data.redirect_url.isEmpty() && data.redirect_url.contains("bangumi")) {
+                videoInfo.epid = Long.parseLong(data.redirect_url.replace("https://www.bilibili.com/bangumi/play/ep", ""));
+            } else {
+                videoInfo.epid = -1;
+            }
         } catch (Exception e) {
-            e.printStackTrace();
             videoInfo.epid = -1;
         }
 
-        JSONObject ugc_season = data.optJSONObject("ugc_season");
-        if (ugc_season != null) {
-            videoInfo.collection = analyzeUgcSeason(ugc_season);
+        // ugc_season
+        if (data.ugc_season != null) {
+            videoInfo.collection = analyzeUgcSeason(data.ugc_season);
         }
 
         return videoInfo;
@@ -249,15 +416,16 @@ public class VideoInfoApi {
 
     public static String getWatching(long aid, long cid) throws IOException, JSONException {
         String url = "https://api.bilibili.com/x/player/online/total?aid=" + aid + "&cid=" + cid;
-        JSONObject result = NetWorkUtil.getJson(url);
-        if (result.has("data") && !result.isNull("data")) {
-            JSONObject data = result.getJSONObject("data");
-            if (data.has("total") && !data.isNull("total")) {
-                if (data.get("total") instanceof String) return data.getString("total");
-                else return StringUtil.toWan(data.getLong("total"));
-            }
-        }
-        return "";
+        String json = NetWorkUtil.getJson(url).toString();
+        ApiResponse<TotalData> resp = GsonUtil.fromJson(json,
+                new com.google.gson.reflect.TypeToken<ApiResponse<TotalData>>(){}.getType());
+        if (resp == null || resp.data == null || resp.data.total == null) return "";
+        if (resp.data.total instanceof String) return (String) resp.data.total;
+        return StringUtil.toWan(((Number) resp.data.total).longValue());
     }
 
+    public static class TotalData {
+        @SerializedName("total")
+        public Object total;
+    }
 }

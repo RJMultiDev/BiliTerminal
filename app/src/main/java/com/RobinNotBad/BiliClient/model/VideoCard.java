@@ -3,12 +3,15 @@ package com.RobinNotBad.BiliClient.model;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.gson.annotations.SerializedName;
+
 import java.io.Serializable;
 
 public class VideoCard implements Parcelable, Serializable {
     public String title;
     public String upName;
     public String view;
+    @SerializedName("pic")
     public String cover;
     public String type = "video";
     public long aid;

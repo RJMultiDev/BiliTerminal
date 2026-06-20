@@ -1,14 +1,20 @@
 package com.RobinNotBad.BiliClient.model;
 
+import com.google.gson.annotations.SerializedName;
+
 import java.io.Serializable;
 import java.util.List;
 
 public class LivePlayInfo implements Serializable {
+    @SerializedName("room_id")
     public long roomid;
     public long short_id;
     public long uid;
+    @SerializedName("is_hidden")
     public boolean isHidden;
+    @SerializedName("is_locked")
     public boolean isLocked;
+    @SerializedName("is_portrait")
     public boolean isPortrait;
     public int live_status;
     public boolean encrypted;

@@ -45,9 +45,14 @@ public class OpusApi {
 
             JSONObject detail = new JSONObject(JsonUtil.search(html, "detail", ""));  //效率不高 能用就行 死去的jsonUtil居然还能发光发热
 
-            JSONObject basic = detail.getJSONObject("basic");
-            opus.commentId = Integer.parseInt(basic.optString("comment_id_str", "0"));
-            opus.commentType = basic.optInt("comment_type");
+            JSONObject basic = detail.optJSONObject("basic");
+            if (basic != null) {
+                opus.commentId = Long.parseLong(basic.optString("comment_id_str", "0"));
+                opus.commentType = basic.optInt("comment_type", 0);
+            }
+
+            if (opus.commentId == 0) opus.commentId = id;
+            if (opus.commentType == 0) opus.commentType = 17;
 
             if (detail.isNull("modules")) return opus;    //isNull其实涵盖了!has的情况，之前都是咋想的判断两次，我简直是sb
             JSONArray modules = detail.getJSONArray("modules");
@@ -56,39 +61,53 @@ public class OpusApi {
                 JSONObject module = modules.getJSONObject(i);
                 switch (module.optString("module_type")) {
                     case "MODULE_TYPE_TITLE":
-                        opus.title = module.getJSONObject("module_title").getString("text");
+                        JSONObject moduleTitle = module.optJSONObject("module_title");
+                        if (moduleTitle != null) opus.title = moduleTitle.optString("text", "");
                         break;
                     case "MODULE_TYPE_TOP":
                         ArrayList<String> topImages = new ArrayList<>();
-                        JSONObject module_top = module.getJSONObject("module_top");
-                        JSONObject display = module_top.getJSONObject("display");
-                        int displayType = display.optInt("type");
-                        if (displayType == 1) {
-                            JSONObject album = display.getJSONObject("album");
-                            JSONArray pics = album.getJSONArray("pics");
-                            for (int j = 0; j < pics.length(); j++) {
-                                topImages.add(pics.getJSONObject(j).getString("url"));
+                        JSONObject module_top = module.optJSONObject("module_top");
+                        if (module_top != null) {
+                            JSONObject display = module_top.optJSONObject("display");
+                            if (display != null) {
+                                int displayType = display.optInt("type");
+                                if (displayType == 1) {
+                                    JSONObject album = display.optJSONObject("album");
+                                    if (album != null) {
+                                        JSONArray pics = album.optJSONArray("pics");
+                                        if (pics != null) {
+                                            for (int j = 0; j < pics.length(); j++) {
+                                                JSONObject pic = pics.optJSONObject(j);
+                                                if (pic != null) topImages.add(pic.optString("url", ""));
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
                         opus.topImages = topImages;
                         Logu.d("yes");
                         break;
                     case "MODULE_TYPE_AUTHOR":
-                        JSONObject module_author = module.getJSONObject("module_author");    //我感觉b站也是一个巨大的草台班子，用户信息格式都好几种，头像有avatar有face有head的，他们自己的程序员不累吗……
+                        JSONObject module_author = module.optJSONObject("module_author");    //我感觉b站也是一个巨大的草台班子，用户信息格式都好几种，头像有avatar有face有head的，他们自己的程序员不累吗……
+                        if (module_author == null) break;
                         UserInfo author = new UserInfo();
-                        author.mid = module_author.getLong("mid");
-                        author.name = module_author.getString("name");
+                        author.mid = module_author.optLong("mid", 0);
+                        author.name = module_author.optString("name", "");
                         author.followed = module_author.optBoolean("following", false);
-                        author.avatar = module_author.getString("face");
+                        author.avatar = module_author.optString("face", module_author.optString("avatar", ""));
                         if (!module_author.isNull("vip"))
-                            author.vip_nickname_color = module_author.getJSONObject("vip").optString("nickname_color", "");
+                            author.vip_nickname_color = module_author.optJSONObject("vip").optString("nickname_color", "");
 
-                        opus.pubTime = module_author.getString("pub_time");
+                        opus.pubTime = module_author.optString("pub_time", "");
                         opus.upInfo = author;
                         break;
                     case "MODULE_TYPE_CONTENT":
-                        JSONArray paragraphs = module.getJSONObject("module_content").getJSONArray("paragraphs");
-                        opus.paragraphs = analyzeParagraphs(paragraphs);
+                        JSONObject moduleContent = module.optJSONObject("module_content");
+                        if (moduleContent != null) {
+                            JSONArray paragraphs = moduleContent.optJSONArray("paragraphs");
+                            if (paragraphs != null) opus.paragraphs = analyzeParagraphs(paragraphs);
+                        }
                         break;
                     case "MODULE_TYPE_STAT":
                         opus.stats = Stats.fromOpus(module.optJSONObject("module_stat"));

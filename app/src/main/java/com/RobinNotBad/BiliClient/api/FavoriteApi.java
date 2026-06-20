@@ -1,192 +1,258 @@
 package com.RobinNotBad.BiliClient.api;
 
-import android.util.Log;
 import android.util.Pair;
 
+import com.RobinNotBad.BiliClient.model.ApiResponse;
 import com.RobinNotBad.BiliClient.model.Collection;
 import com.RobinNotBad.BiliClient.model.FavoriteFolder;
 import com.RobinNotBad.BiliClient.model.Opus;
 import com.RobinNotBad.BiliClient.model.VideoCard;
+import com.RobinNotBad.BiliClient.util.GsonUtil;
 import com.RobinNotBad.BiliClient.util.NetWorkUtil;
 import com.RobinNotBad.BiliClient.util.SharedPreferencesUtil;
 import com.RobinNotBad.BiliClient.util.StringUtil;
+import com.google.gson.annotations.SerializedName;
 
-import org.json.JSONArray;
 import org.json.JSONException;
-import org.json.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
-//收藏API
-
 public class FavoriteApi {
-    // TODO 合集收藏
+
+    public static class FavFolderListData {
+        @SerializedName("list")
+        public List<FavFolderItem> list;
+    }
+
+    public static class FavFolderItem {
+        @SerializedName("fav_box")
+        public long fav_box;
+        @SerializedName("name")
+        public String name;
+        @SerializedName("videos")
+        public List<FavVideoRef> videos;
+        @SerializedName("count")
+        public int count;
+        @SerializedName("max_count")
+        public int max_count;
+    }
+
+    public static class FavVideoRef {
+        @SerializedName("pic")
+        public String pic;
+    }
+
+    public static class V3FavFolderData {
+        @SerializedName("list")
+        public List<V3FavFolderItem> list;
+    }
+
+    public static class V3FavFolderItem {
+        @SerializedName("fid")
+        public long fid;
+        @SerializedName("id")
+        public long id;
+    }
+
+    public static class FavFolderVideosData {
+        @SerializedName("archives")
+        public List<FavArchiveItem> archives;
+    }
+
+    public static class FavArchiveItem {
+        @SerializedName("title")
+        public String title;
+        @SerializedName("pic")
+        public String pic;
+        @SerializedName("aid")
+        public long aid;
+        @SerializedName("owner")
+        public RecommendApi.Owner owner;
+        @SerializedName("stat")
+        public RecommendApi.Stat stat;
+    }
+
+    public static class CollectedListData {
+        @SerializedName("has_more")
+        public boolean has_more;
+        @SerializedName("list")
+        public List<CollectionItem> list;
+    }
+
+    public static class CollectionItem {
+        @SerializedName("id")
+        public int id;
+        @SerializedName("mid")
+        public long mid;
+        @SerializedName("title")
+        public String title;
+        @SerializedName("cover")
+        public String cover;
+        @SerializedName("intro")
+        public String intro;
+        @SerializedName("view_count")
+        public int view_count;
+    }
+
+    public static class OpusFavData {
+        @SerializedName("has_more")
+        public boolean has_more;
+        @SerializedName("items")
+        public List<OpusItem> items;
+    }
+
+    public static class OpusItem {
+        @SerializedName("content")
+        public String content;
+        @SerializedName("cover")
+        public String cover;
+        @SerializedName("title")
+        public String title;
+        @SerializedName("opus_id")
+        public String opus_id;
+        @SerializedName("time_text")
+        public String time_text;
+    }
+
+    public static class FavStateData {
+        @SerializedName("list")
+        public List<FavStateItem> list;
+    }
+
+    public static class FavStateItem {
+        @SerializedName("title")
+        public String title;
+        @SerializedName("fid")
+        public long fid;
+        @SerializedName("fav_state")
+        public int fav_state;
+    }
 
     public static ArrayList<FavoriteFolder> getFavoriteFolders(long mid) throws IOException, JSONException {
         String url = "https://space.bilibili.com/ajax/fav/getBoxList?mid=" + mid;
-        JSONObject result = NetWorkUtil.getJson(url);
-        JSONObject data = result.getJSONObject("data");
+        String json = NetWorkUtil.getJson(url).toString();
+        ApiResponse<FavFolderListData> resp = GsonUtil.fromJson(json,
+                new com.google.gson.reflect.TypeToken<ApiResponse<FavFolderListData>>(){}.getType());
         ArrayList<FavoriteFolder> folderList = new ArrayList<>();
-        java.util.Map<Long, Long> fidToMediaIdMap = new java.util.HashMap<>();
-        
+        if (resp == null || resp.data == null || resp.data.list == null) return folderList;
+
+        Map<Long, Long> fidToMediaIdMap = new HashMap<>();
         try {
             String v3Url = "https://api.bilibili.com/x/v3/fav/folder/created/list-all?type=2&up_mid=" + mid;
-            JSONObject v3Result = NetWorkUtil.getJson(v3Url);
-            JSONObject v3Data = v3Result.optJSONObject("data");
-            if (v3Data != null && v3Data.has("list") && !v3Data.isNull("list")) {
-                JSONArray v3List = v3Data.getJSONArray("list");
-                for (int j = 0; j < v3List.length(); j++) {
-                    JSONObject v3Folder = v3List.getJSONObject(j);
-                    long v3Fid = v3Folder.optLong("fid", 0);
-                    long v3MediaId = v3Folder.optLong("id", 0);
-                    if (v3Fid > 0 && v3MediaId > 0) {
-                        fidToMediaIdMap.put(v3Fid, v3MediaId);
+            String v3Json = NetWorkUtil.getJson(v3Url).toString();
+            ApiResponse<V3FavFolderData> v3Resp = GsonUtil.fromJson(v3Json,
+                    new com.google.gson.reflect.TypeToken<ApiResponse<V3FavFolderData>>(){}.getType());
+            if (v3Resp != null && v3Resp.data != null && v3Resp.data.list != null) {
+                for (V3FavFolderItem item : v3Resp.data.list) {
+                    if (item != null && item.fid > 0 && item.id > 0) {
+                        fidToMediaIdMap.put(item.fid, item.id);
                     }
                 }
             }
-        } catch (Exception e) {
-            Log.e("debug-获取mediaId失败", e.getMessage());
+        } catch (Exception ignored) {
         }
-        
-        if (data.has("list") && !data.isNull("list")) {
-            JSONArray list = data.getJSONArray("list");
-            for (int i = 0; i < list.length(); i++) {
-                JSONObject folder = list.getJSONObject(i);
 
-                FavoriteFolder favoriteFolder = new FavoriteFolder();
-
-                favoriteFolder.id = folder.getLong("fav_box");
-                favoriteFolder.name = folder.getString("name");
-
-                if (!folder.isNull("videos"))
-                    favoriteFolder.cover = folder.getJSONArray("videos").getJSONObject(0).getString("pic");
-                else favoriteFolder.cover = "";
-
-                favoriteFolder.videoCount = folder.getInt("count");
-                favoriteFolder.maxCount = folder.getInt("max_count");
-                favoriteFolder.isDefault = (i == 0 || favoriteFolder.id == 0);
-                
-                Long mediaId = fidToMediaIdMap.get(favoriteFolder.id);
-                if (mediaId != null) {
-                    favoriteFolder.mediaId = mediaId;
-                }
-                
-                Log.e("debug-收藏夹ID", String.valueOf(favoriteFolder.id));
-                Log.e("debug-收藏夹mediaId", String.valueOf(favoriteFolder.mediaId));
-                Log.e("debug-收藏夹名称", favoriteFolder.name);
-                Log.e("debug-收藏夹封面", favoriteFolder.cover);
-                Log.e("debug-收藏夹视频数量", String.valueOf(favoriteFolder.videoCount));
-                Log.e("debug-收藏夹视频上限", String.valueOf(favoriteFolder.maxCount));
-                Log.e("debug-收藏夹", "----------------");
-                folderList.add(favoriteFolder);
+        for (int i = 0; i < resp.data.list.size(); i++) {
+            FavFolderItem folder = resp.data.list.get(i);
+            if (folder == null) continue;
+            FavoriteFolder fav = new FavoriteFolder();
+            fav.id = folder.fav_box;
+            fav.name = folder.name;
+            if (folder.videos != null && !folder.videos.isEmpty() && folder.videos.get(0) != null) {
+                fav.cover = folder.videos.get(0).pic;
+            } else {
+                fav.cover = "";
             }
+            fav.videoCount = folder.count;
+            fav.maxCount = folder.max_count;
+            fav.isDefault = (i == 0 || fav.id == 0);
+            Long mediaId = fidToMediaIdMap.get(fav.id);
+            if (mediaId != null) fav.mediaId = mediaId;
+            folderList.add(fav);
         }
         return folderList;
     }
 
-    /**
-     * 获取收藏的合集
-     *
-     * @param mid            目标用户
-     * @param page           页数
-     * @param collectionList collection对象List
-     * @return 返回码与has_more
-     */
-    public static Pair<Integer, Boolean> getFavoritedCollections(long mid, int page, List<Collection> collectionList) throws JSONException, IOException {
+    public static Pair<Integer, Boolean> getFavoritedCollections(long mid, int page, List<Collection> collectionList) throws IOException, JSONException {
         String url = "https://api.bilibili.com/x/v3/fav/folder/collected/list" + new NetWorkUtil.FormData()
-                .setUrlParam(true)
-                .put("platform", "web")
-                .put("up_mid", mid)
-                .put("pn", page)
-                .put("ps", 10);
-        JSONObject result = NetWorkUtil.getJson(url);
-        JSONObject data = result.optJSONObject("data");
-        boolean has_more = false;
-        if (data != null) {
-            has_more = data.optBoolean("has_more", false);
-            JSONArray list = data.optJSONArray("list");
-            if (list != null) {
-                for (int i = 0; i < list.length(); i++) {
-                    JSONObject item = list.getJSONObject(i);
-                    Collection collection = new Collection();
-                    collection.id = item.optInt("id", -1);
-                    collection.mid = item.optLong("mid", -1);
-                    collection.title = item.optString("title");
-                    collection.cover = item.optString("cover");
-                    collection.intro = item.optString("intro");
-                    collection.view = StringUtil.toWan(item.optInt("view_count", -1));
-                    collectionList.add(collection);
+                .setUrlParam(true).put("platform", "web").put("up_mid", mid).put("pn", page).put("ps", 10);
+        String json = NetWorkUtil.getJson(url).toString();
+        ApiResponse<CollectedListData> resp = GsonUtil.fromJson(json,
+                new com.google.gson.reflect.TypeToken<ApiResponse<CollectedListData>>(){}.getType());
+        int code = resp != null ? resp.code : -1;
+        boolean hasMore = false;
+        if (resp != null && resp.data != null) {
+            hasMore = resp.data.has_more;
+            if (resp.data.list != null) {
+                for (CollectionItem item : resp.data.list) {
+                    if (item == null) continue;
+                    Collection c = new Collection();
+                    c.id = item.id;
+                    c.mid = item.mid;
+                    c.title = item.title;
+                    c.cover = item.cover;
+                    c.intro = item.intro;
+                    c.view = StringUtil.toWan(item.view_count);
+                    collectionList.add(c);
                 }
             }
         }
-        return new Pair<>(result.optInt("code", -1), has_more);
+        return new Pair<>(code, hasMore);
     }
 
     public static int getFolderVideos(long mid, long fid, int page, ArrayList<VideoCard> videoList) throws IOException, JSONException {
-        String url = "https://api.bilibili.com/x/space/fav/arc?vmid=" + mid
-                + "&ps=30&fid=" + fid + "&tid=0&keyword=&pn=" + page + "&order=fav_time";
-        JSONObject result = NetWorkUtil.getJson(url);
-        JSONObject data = result.getJSONObject("data");
-        if (data.has("archives") && !data.isNull("archives")) {
-            JSONArray archives = data.getJSONArray("archives");
-            if (archives.length() != 0) {
-                for (int i = 0; i < archives.length(); i++) {
-                    JSONObject video = archives.getJSONObject(i);
-                    String title = video.getString("title");
-                    String cover = video.getString("pic");
-                    long aid = video.getLong("aid");
-
-                    JSONObject owner = video.getJSONObject("owner");
-                    String upName = owner.getString("name");
-
-                    JSONObject stat = video.getJSONObject("stat");
-                    String view = StringUtil.toWan(stat.getLong("view")) + "观看";
-                    videoList.add(new VideoCard(title, upName, view, cover, aid, ""));
-                }
-                return 0;
-            } else return 1;
-        } else return -1;
+        String url = "https://api.bilibili.com/x/space/fav/arc?vmid=" + mid + "&ps=30&fid=" + fid + "&tid=0&keyword=&pn=" + page + "&order=fav_time";
+        String json = NetWorkUtil.getJson(url).toString();
+        ApiResponse<FavFolderVideosData> resp = GsonUtil.fromJson(json,
+                new com.google.gson.reflect.TypeToken<ApiResponse<FavFolderVideosData>>(){}.getType());
+        if (resp == null || resp.data == null || resp.data.archives == null || resp.data.archives.isEmpty()) return 1;
+        for (FavArchiveItem item : resp.data.archives) {
+            if (item == null) continue;
+            String upName = item.owner != null ? item.owner.name : "";
+            int viewCount = item.stat != null ? item.stat.view : 0;
+            videoList.add(new VideoCard(item.title, upName, StringUtil.toWan(viewCount) + "观看", item.pic, item.aid, ""));
+        }
+        return 0;
     }
 
     public static boolean getFavouriteOpus(ArrayList<Opus> list, int page) throws IOException, JSONException {
         String url = "https://api.bilibili.com/x/polymer/web-dynamic/v1/opus/favlist?page_size=10&page=" + page;
-        JSONObject result = NetWorkUtil.getJson(url);
-        Log.e("OpusFav", result.toString());
-        boolean hasMore = result.getJSONObject("data").getBoolean("has_more");
-        if (!hasMore) Log.e("图文", "没有更多啦");
-        JSONArray items = result.getJSONObject("data").getJSONArray("items");
-
-        for (int i = 0; i < items.length(); i++) {
-            JSONObject item = items.getJSONObject(i);
-            Opus opus = new Opus();
-            opus.content = item.optString("content");
-            opus.cover = item.optString("cover");
-            opus.title = item.optString("title");
-            if (opus.title.isEmpty()) opus.title = opus.content;
-            opus.id = Long.parseLong(item.getString("opus_id"));
-            opus.pubTime = item.optString("time_text");
-            list.add(opus);
+        String json = NetWorkUtil.getJson(url).toString();
+        ApiResponse<OpusFavData> resp = GsonUtil.fromJson(json,
+                new com.google.gson.reflect.TypeToken<ApiResponse<OpusFavData>>(){}.getType());
+        if (resp == null || !resp.isSuccess() || resp.data == null) return false;
+        if (resp.data.items != null) {
+            for (OpusItem item : resp.data.items) {
+                if (item == null) continue;
+                Opus opus = new Opus();
+                opus.content = item.content;
+                opus.cover = item.cover;
+                opus.title = item.title;
+                if (opus.title == null || opus.title.isEmpty()) opus.title = opus.content;
+                try { opus.id = Long.parseLong(item.opus_id); } catch (Exception ignored) {}
+                opus.pubTime = item.time_text;
+                list.add(opus);
+            }
         }
-
-        return hasMore;
+        return resp.data.has_more;
     }
 
     public static void getFavoriteState(long aid, ArrayList<String> folderList, ArrayList<Long> fidList, ArrayList<Boolean> stateList) throws IOException, JSONException {
         String url = "https://api.bilibili.com/x/v3/fav/folder/created/list-all?type=2&jsonp=jsonp&rid=" + aid + "&up_mid=" + SharedPreferencesUtil.getLong("mid", 0);
-        JSONObject result = NetWorkUtil.getJson(url);
-        JSONObject data = result.getJSONObject("data");
-
-        if (data.has("list") && !data.isNull("list")) {
-            JSONArray list = data.getJSONArray("list");
-            for (int i = 0; i < list.length(); i++) {
-                JSONObject folder = list.getJSONObject(i);
-                folderList.add(folder.getString("title"));
-                fidList.add(folder.getLong("fid"));
-                stateList.add(folder.getInt("fav_state") == 1);
-            }
+        String json = NetWorkUtil.getJson(url).toString();
+        ApiResponse<FavStateData> resp = GsonUtil.fromJson(json,
+                new com.google.gson.reflect.TypeToken<ApiResponse<FavStateData>>(){}.getType());
+        if (resp == null || resp.data == null || resp.data.list == null) return;
+        for (FavStateItem item : resp.data.list) {
+            if (item == null) continue;
+            folderList.add(item.title);
+            fidList.add(item.fid);
+            stateList.add(item.fav_state == 1);
         }
     }
 
@@ -195,60 +261,32 @@ public class FavoriteApi {
         String addFid = fid + strMid.substring(strMid.length() - 2);
         String url = "https://api.bilibili.com/medialist/gateway/coll/resource/deal";
         String per = "rid=" + aid + "&type=2&add_media_ids=" + addFid + "&del_media_ids=&csrf=" + SharedPreferencesUtil.getString("csrf", "");
-
-        JSONObject result = new JSONObject(Objects.requireNonNull(NetWorkUtil.post(url, per, NetWorkUtil.webHeaders).body()).string());
-        Log.e("debug-添加收藏", result.toString());
-        return result.getInt("code");
+        return GsonUtil.fromJson(Objects.requireNonNull(NetWorkUtil.post(url, per, NetWorkUtil.webHeaders).body()).string(), ApiResponse.class).code;
     }
-
 
     public static int deleteFavorite(long aid, long fid) throws IOException, JSONException {
         String strMid = String.valueOf(SharedPreferencesUtil.getLong("mid", 0));
-        String delFid = fid + strMid.substring(strMid.length() - 2);    //腕上哔哩那边是错的，fid后面要加上mid的后两位而不是定值，虽然这不影响什么
+        String delFid = fid + strMid.substring(strMid.length() - 2);
         String url = "https://api.bilibili.com/medialist/gateway/coll/resource/batch/del";
         String per = "resources=" + aid + ":2&media_id=" + delFid + "&csrf=" + SharedPreferencesUtil.getString("csrf", "");
-
-        JSONObject result = new JSONObject(Objects.requireNonNull(NetWorkUtil.post(url, per, NetWorkUtil.webHeaders).body()).string());
-        Log.e("debug-删除收藏", result.toString());
-        return result.getInt("code");
+        return GsonUtil.fromJson(Objects.requireNonNull(NetWorkUtil.post(url, per, NetWorkUtil.webHeaders).body()).string(), ApiResponse.class).code;
     }
 
     public static int addFolder(String title, String intro, int privacy) throws IOException, JSONException {
         String url = "https://api.bilibili.com/x/v3/fav/folder/add";
-        NetWorkUtil.FormData formData = new NetWorkUtil.FormData()
-                .put("title", title)
-                .put("intro", intro != null ? intro : "")
-                .put("privacy", privacy)
-                .put("csrf", SharedPreferencesUtil.getString("csrf", ""));
-        String data = formData.toString();
-        JSONObject result = new JSONObject(Objects.requireNonNull(NetWorkUtil.post(url, data, NetWorkUtil.webHeaders).body()).string());
-        Log.e("debug-新建收藏夹", result.toString());
-        return result.getInt("code");
+        String data = new NetWorkUtil.FormData().put("title", title).put("intro", intro != null ? intro : "").put("privacy", privacy).put("csrf", SharedPreferencesUtil.getString("csrf", "")).toString();
+        return GsonUtil.fromJson(Objects.requireNonNull(NetWorkUtil.post(url, data, NetWorkUtil.webHeaders).body()).string(), ApiResponse.class).code;
     }
 
     public static int editFolder(long mediaId, String title, String intro, int privacy) throws IOException, JSONException {
         String url = "https://api.bilibili.com/x/v3/fav/folder/edit";
-        NetWorkUtil.FormData formData = new NetWorkUtil.FormData()
-                .put("media_id", mediaId)
-                .put("title", title)
-                .put("intro", intro != null ? intro : "")
-                .put("privacy", privacy)
-                .put("csrf", SharedPreferencesUtil.getString("csrf", ""));
-        String data = formData.toString();
-        JSONObject result = new JSONObject(Objects.requireNonNull(NetWorkUtil.post(url, data, NetWorkUtil.webHeaders).body()).string());
-        Log.e("debug-修改收藏夹", result.toString());
-        return result.getInt("code");
+        String data = new NetWorkUtil.FormData().put("media_id", mediaId).put("title", title).put("intro", intro != null ? intro : "").put("privacy", privacy).put("csrf", SharedPreferencesUtil.getString("csrf", "")).toString();
+        return GsonUtil.fromJson(Objects.requireNonNull(NetWorkUtil.post(url, data, NetWorkUtil.webHeaders).body()).string(), ApiResponse.class).code;
     }
 
     public static int deleteFolder(long mediaId) throws IOException, JSONException {
         String url = "https://api.bilibili.com/x/v3/fav/folder/del";
-        NetWorkUtil.FormData formData = new NetWorkUtil.FormData()
-                .put("media_ids", String.valueOf(mediaId))
-                .put("csrf", SharedPreferencesUtil.getString("csrf", ""));
-        String data = formData.toString();
-        JSONObject result = new JSONObject(Objects.requireNonNull(NetWorkUtil.post(url, data, NetWorkUtil.webHeaders).body()).string());
-        Log.e("debug-删除收藏夹", result.toString());
-        return result.getInt("code");
+        String data = new NetWorkUtil.FormData().put("media_ids", String.valueOf(mediaId)).put("csrf", SharedPreferencesUtil.getString("csrf", "")).toString();
+        return GsonUtil.fromJson(Objects.requireNonNull(NetWorkUtil.post(url, data, NetWorkUtil.webHeaders).body()).string(), ApiResponse.class).code;
     }
-
 }

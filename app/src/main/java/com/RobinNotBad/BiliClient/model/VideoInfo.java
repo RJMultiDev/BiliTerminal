@@ -5,6 +5,7 @@ import android.os.Parcelable;
 
 import com.RobinNotBad.BiliClient.util.SharedPreferencesUtil;
 import com.RobinNotBad.BiliClient.util.StringUtil;
+import com.google.gson.annotations.SerializedName;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -18,8 +19,11 @@ public class VideoInfo implements Parcelable, Serializable { // 自定义类需�
     public String bvid;
     public long aid;
     public String title;
+    @SerializedName("staff")
     public ArrayList<UserInfo> staff = new ArrayList<>(); // UP主列表
+    @SerializedName("pic")
     public String cover;
+    @SerializedName("desc")
     public String description;
     public String duration;
     public Stats stats;

@@ -3,9 +3,12 @@ package com.RobinNotBad.BiliClient.model;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import com.google.gson.annotations.SerializedName;
+
 import java.io.Serializable;
 
 public class LiveRoom implements Parcelable, Serializable {
+    @SerializedName(value = "roomid", alternate = {"room_id"})
     public long roomid;
     public long short_id;
     public long uid;
@@ -22,9 +25,13 @@ public class LiveRoom implements Parcelable, Serializable {
     public String keyframe;
     public String show_cover;
     public String face;
+    @SerializedName(value = "area_parent_id", alternate = {"area_v2_parent_id", "parent_area_id"})
     public int area_parent_id;
+    @SerializedName(value = "area_parent_name", alternate = {"area_v2_parent_name", "parent_area_name"})
     public String area_parent_name;
+    @SerializedName(value = "area_id", alternate = {"area_v2_id"})
     public int area_id;
+    @SerializedName(value = "area_name", alternate = {"area_v2_name"})
     public String area_name;
     public String session_id;
     public long group_id;
@@ -88,6 +95,7 @@ public class LiveRoom implements Parcelable, Serializable {
     }
 
     public static class Watched implements Parcelable, Serializable {
+        @SerializedName("switch")
         public boolean isSwitch;
         public int num;
         public String text_small;

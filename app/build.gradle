@@ -123,4 +123,5 @@ dependencies {
     implementation "org.brotli:dec:0.1.2"
     implementation "com.aayushatharva.brotli4j:brotli4j:1.16.0"
     implementation 'com.google.protobuf:protobuf-javalite:3.21.12'
+    implementation 'com.google.code.gson:gson:2.8.9'
 }
