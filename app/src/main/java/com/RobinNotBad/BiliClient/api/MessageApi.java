@@ -65,10 +65,12 @@ public class MessageApi {
     public static class LikeItemData {
         @SerializedName("business_id") public int business_id;
         @SerializedName("item_id") public long item_id;
+        @SerializedName("subject_id") public long subject_id;
         @SerializedName("source_id") public long source_id;
         @SerializedName("root_id") public long root_id;
         @SerializedName("type") public String type;
         @SerializedName("title") public String title;
+        @SerializedName("source_content") public String source_content;
         @SerializedName("image") public String image;
         @SerializedName("uri") public String uri;
         @SerializedName("target_id") public long target_id;
@@ -212,12 +214,16 @@ public class MessageApi {
             mc.user = new ArrayList<>(); if (obj.user != null) mc.user.add(parseUser(obj.user));
             LikeItemData item = obj.item;
             if (item == null) { mc.getType = MessageCard.GET_TYPE_REPLY; list.add(mc); continue; }
-            mc.businessId = item.business_id; mc.subjectId = item.item_id; mc.sourceId = item.source_id;
+            mc.businessId = item.business_id; mc.subjectId = item.subject_id; mc.sourceId = item.source_id;
             mc.rootId = item.root_id; mc.itemType = item.type; mc.targetId = item.target_id;
-            mc.content = item.title; mc.getType = MessageCard.GET_TYPE_REPLY;
+            // 原版逻辑：action 文本显示 source_content（直接父级 C）
+            mc.content = (item.source_content != null) ? item.source_content : item.title;
+            mc.getType = MessageCard.GET_TYPE_REPLY;
             switch (item.type) {
                 case "video": mc.videoCard = parseVideoCard(item); break;
-                case "reply": Reply r = buildReply(item, false); r.message = new SpannableString("[评论] " + item.title); mc.replyInfo = r; break;
+                case "reply": Reply r = buildReply(item, false);
+                    r.message = new SpannableString("[评论] " + item.title);
+                    mc.replyInfo = r; break;
                 case "dynamic": case "album": Reply rd = buildReply(item, true); rd.message = new SpannableString("[动态] " + item.title); mc.dynamicInfo = rd; break;
                 case "article": Reply ra = new Reply(); ra.rpid = item.target_id; ra.message = new SpannableString("[专栏] " + item.title); ra.childCount = 0; mc.replyInfo = ra; break;
                 default: mc.content = "无法识别这个类别：" + item.type;
@@ -247,7 +253,9 @@ public class MessageApi {
             mc.rootId = item.root_id; mc.itemType = item.type; mc.getType = MessageCard.GET_TYPE_AT;
             switch (item.type) {
                 case "video": mc.videoCard = parseVideoCard(item); break;
-                case "reply": Reply r = buildReply(item, false); r.message = new SpannableString("[评论] " + item.title); mc.replyInfo = r; break;
+                case "reply": Reply r = buildReply(item, false);
+                    r.message = new SpannableString("[评论] " + item.title);
+                    mc.replyInfo = r; break;
                 case "dynamic": Reply rd = buildReply(item, true); rd.message = new SpannableString("[动态] " + item.title); mc.dynamicInfo = rd; break;
                 case "article": Reply ra = new Reply(); ra.rpid = item.target_id; ra.message = new SpannableString("[专栏] " + item.title); ra.childCount = 0; mc.replyInfo = ra; break;
             }
